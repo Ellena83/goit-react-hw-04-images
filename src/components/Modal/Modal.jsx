@@ -1,13 +1,13 @@
 import { Component } from "react";
-//import { createPortal } from "react-dom";
+import { createPortal } from "react-dom";
+import PropTypes from 'prop-types';
 import css from "./Modal.module.css";
 
-//const modalRoot = document.querySelector('#modal-root');
+const modalRoot = document.querySelector('#modal-root');
 
 export class Modal extends Component {
 
     componentDidMount() {
-
         window.addEventListener('keydown', this.onCloseHandler)
     }
     componentWillUnmount() {
@@ -16,8 +16,6 @@ export class Modal extends Component {
 
     onCloseHandler = evt => {
         if (evt.code === 'Escape') {
-            console.log('нажали ESC - нужно закрыть модалку');
-            console.log(this.props)
             this.props.onClose();
         }
     }
@@ -27,14 +25,19 @@ export class Modal extends Component {
         }
     };
     render() {
-        return (
-
+        return createPortal(
             <div className={css.modalBackdrop} onClick={this.handleBackdropClick}>
                 <div className={css.modalContent}>{this.props.children}</div>
-                <img src={this.props.largeImageURL} alt={this.props.tegs}></img>
-            </div>
-            // modalRoot
-
+            </div>,
+            modalRoot,
         )
     }
 }
+Modal.defaultProps = {
+    children: null,
+};
+
+Modal.propTypes = {
+    children: PropTypes.node,
+    onClose: PropTypes.func.isRequired,
+};
