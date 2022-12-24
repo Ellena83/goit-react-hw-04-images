@@ -26,32 +26,11 @@ export class App extends Component {
 
   componentDidUpdate(_, prevState) {
     const { query, page } = this.state;
-
-    if (query !== prevState.query) {
-      this.setState({ isLoading: true });
-
-      fetchImages(query)
-        .then(({ hits, totalHits }) => {
-          const imageArray = hits.map(hit => ({
-            id: hit.id,
-            tags: hit.tags,
-            webformatURL: hit.webformatURL,
-            largeImageURL: hit.largeImageURL,
-          }))
-          return this.setState({
-            page: 1,
-            images: imageArray,
-            imagesPerPage: imageArray.length,
-            totalImages: totalHits,
-          })
-        })
-        .catch(error => this.setState({ error }))
-        .finally(() => this.setState({ isLoading: false })
-        )
+    if (!query) {
+      return;
     }
-    if (prevState.page !== page && page !== 1) {
+    else if (query !== prevState.query || prevState.page !== page) {
       this.setState({ isLoading: true });
-
       fetchImages(query, page)
         .then(({ hits }) => {
           const imageArray = hits.map(hit => ({
@@ -70,7 +49,6 @@ export class App extends Component {
         .catch(error => this.setState({ error }))
         .finally(() => this.setState({ isLoading: false }));
     }
-
   }
 
   toggleModal = () => {
