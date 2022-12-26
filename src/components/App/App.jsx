@@ -21,7 +21,7 @@ export class App extends Component {
     showModal: false,
     error: null,
     id: null,
-    largeImageURL: 'largeImageURL',
+    largeImageURL: '',
   }
 
   componentDidUpdate(_, prevState) {
@@ -33,16 +33,10 @@ export class App extends Component {
       this.setState({ isLoading: true });
       fetchImages(query, page)
         .then(({ hits }) => {
-          const imageArray = hits.map(hit => ({
-            id: hit.id,
-            tags: hit.tags,
-            webformatURL: hit.webformatURL,
-            largeImageURL: hit.largeImageURL,
-          }))
           return this.setState(({ images, imagesPerPage }) => {
             return {
-              images: [...images, ...imageArray],
-              imagesPerPage: imagesPerPage + imageArray.length,
+              images: [...images, ...hits],
+              imagesPerPage: imagesPerPage + hits.length,
             }
           })
         })
@@ -59,7 +53,17 @@ export class App extends Component {
   }
 
   handleFormSubmit = query => {
-    this.setState({ query });
+    this.setState({
+      query,
+      images: [],
+      page: 1,
+      per_page: 12,
+      isLoading: false,
+      showModal: false,
+      error: null,
+      id: null,
+      largeImageURL: ''
+    });
   }
 
   onLoadMore = () => {
