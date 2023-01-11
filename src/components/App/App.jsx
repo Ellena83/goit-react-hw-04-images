@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import { useEffect, useState } from "react";
 import { fetchImages } from "services/api";
 import { Searchbar } from "../Searchbar/Searchbar";
 import { Loader } from "../Loader/Loader";
@@ -11,105 +11,103 @@ import 'react-toastify/dist/ReactToastify.css';
 import { BsXLg } from 'react-icons/bs';
 import css from '../Modal/Modal.module.css';
 
-export class App extends Component {
-  state = {
-    query: '',
-    images: [],
-    page: 1,
-    per_page: 12,
-    isLoading: false,
-    showModal: false,
-    error: null,
-    id: null,
-    largeImageURL: '',
+export const App = () => {
+  const [images, setImages] = useState('');
+  const [page, setPage] = useState(1);
+  const [query, setQuery] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [error, setError] = useState(null);
+  const [id, setId] = useState(null);
+  const [largeImageURL, setLargeImage] = useState('');
+  const [totalImages, setTotalImages] = useState(0);
+
+  useEffect(() => {
+    if (!query) return;
+    getImages();
+  }, [query,]);
+
+  const handleFormSubmit = query => {
+    setQuery(query);
+    setImages([]);
+    setPage(1);
+    setError(null);
+    setId(null);
+    setIsLoading(false);
   }
 
-  componentDidUpdate(_, prevState) {
-    const { query, page } = this.state;
-    if (!query) {
-      return;
+  const getImages = async () => {
+
+    setIsLoading(true);
+
+    try {
+      const { hits, totalHits } = await fetchImages(query, page);
+      setImages(prevImages => [...prevImages, ...hits]);
+      setPage(prevPage => prevPage + 1);
+      setTotalImages(totalHits);
+
     }
-    else if (query !== prevState.query || prevState.page !== page) {
-      this.setState({ isLoading: true });
-      fetchImages(query, page)
-        .then(({ hits }) => {
-          return this.setState(({ images, imagesPerPage }) => {
-            return {
-              images: [...images, ...hits],
-              imagesPerPage: imagesPerPage + hits.length,
-            }
-          })
-        })
-        .catch(error => this.setState({ error }))
-        .finally(() => this.setState({ isLoading: false }));
+    catch (error) {
+      console.log('Error with app fetch', error);
+      setError({ error });
     }
+    finally {
+      setIsLoading(false);
+    }
+  };
+
+  const toggleModal = () => {
+    setShowModal(prevShowModal => !prevShowModal);
+    setLargeImage('');
   }
 
-  toggleModal = () => {
-    this.setState(({ showModal }) => ({
-      showModal: !showModal,
-      largeImageURL: '',
-    }))
-  }
-
-  handleFormSubmit = query => {
-    this.setState({
-      query,
-      images: [],
-      page: 1,
-      per_page: 12,
-      isLoading: false,
-      showModal: false,
-      error: null,
-      id: null,
-      largeImageURL: ''
-    });
-  }
-
-  onLoadMore = () => {
-    this.setState(prevState => (
-      { page: prevState.page + 1 }
-    ))
-  }
-
-  handleGalleryItem = (fullImageURL => {
-    this.setState({ largeImageURL: fullImageURL, showModal: true })
+  const handleGalleryItem = (fullImageURL => {
+    setLargeImage(fullImageURL);
+    setShowModal(true);
   })
 
-  render() {
-    const { images, isLoading, showModal, largeImageURL, tegs } = this.state;
-    return (
-      <>
-        <Searchbar
-          onSubmit={this.handleFormSubmit} />
+  const showLoadmoreButton = images.length > 0
+    && images.length >= 12
+    && images.length < totalImages;
 
-        {images.length < 1 && <Message>
-          <h2>The gallery is empty ... </h2>
-          <p>Use search field!</p>
-        </Message>}
+  const endofListMessage = images.length >= totalImages
+    && images.length > 0;
 
-        {images && <ImageGallery
-          images={images}
-          onImageClick={this.handleGalleryItem} />}
+  return (
+    <>
+      <Searchbar
+        onSubmit={handleFormSubmit} />
 
-        {!isLoading && (images.length % 12 === 0)
-          && (images.length !== 0)
-          && (<Button
-            onLoadMore={this.onLoadMore}
-          />)}
+      {images.length < 1 && <Message>
+        <h2>The gallery is empty ... </h2>
+        <p>Use search field, please!</p>
+      </Message>}
 
-        {showModal && (<Modal
-          onClose={this.toggleModal} >
-          <button type="button" className={css.modalBtn} onClick={this.toggleModal}>
-            <BsXLg className={css.icon} />
-          </button>
-          <img className="modalImage" src={largeImageURL} alt={tegs} />
-        </Modal>)}
+      {images && <ImageGallery
+        images={images}
+        onImageClick={handleGalleryItem} />}
 
-        {isLoading && <Loader />}
+      {showLoadmoreButton &&
+        (<Button
+          onClick={getImages}
+        />)}
 
-        <ToastContainer />
-      </>
-    );
-  }
+      {endofListMessage && <Message>
+        <p>The end of gallery! </p>
+      </Message>}
+
+      {showModal && (<Modal
+        onClose={toggleModal} >
+        <button type="button" className={css.modalBtn} onClick={toggleModal}>
+          <BsXLg className={css.icon} />
+        </button>
+        <img className="modalImage" src={largeImageURL} alt={images.tegs} />
+      </Modal>)}
+
+      {isLoading && <Loader />}
+
+      <ToastContainer />
+    </>
+  );
+
 }
