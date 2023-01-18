@@ -31,9 +31,9 @@ export const App = () => {
         setImages(prevImages => [...prevImages, ...hits]);
         setTotalImages(totalHits);
       })
-      .catch(error => setError(error))
+      .catch(error => setError({ error }))
       .finally(() => setIsLoading(false));
-  }, [query, page, error]);
+  }, [query, page]);
 
   const handleFormSubmit = query => {
     setQuery(query);
@@ -91,6 +91,10 @@ export const App = () => {
       </Modal>)}
 
       {isLoading && <Loader />}
+
+      {error && <Message>
+        <p>Oops... something wrong!...</p>
+      </Message>}
 
       <ToastContainer />
     </>
