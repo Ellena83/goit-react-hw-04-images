@@ -18,43 +18,30 @@ export const App = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [error, setError] = useState(null);
-  const [id, setId] = useState(null);
   const [largeImageURL, setLargeImage] = useState('');
   const [totalImages, setTotalImages] = useState(0);
 
   useEffect(() => {
-    if (!query) return;
-    getImages();
-  }, [query,]);
+    if (!query) {
+      return;
+    }
+    setIsLoading(true);
+    fetchImages(query, page)
+      .then(({ hits, totalHits }) => {
+        setImages(prevImages => [...prevImages, ...hits]);
+        setTotalImages(totalHits);
+      })
+      .catch(error => setError(error))
+      .finally(() => setIsLoading(false));
+  }, [query, page, error]);
 
   const handleFormSubmit = query => {
     setQuery(query);
     setImages([]);
     setPage(1);
     setError(null);
-    setId(null);
     setIsLoading(false);
   }
-
-  const getImages = async () => {
-
-    setIsLoading(true);
-
-    try {
-      const { hits, totalHits } = await fetchImages(query, page);
-      setImages(prevImages => [...prevImages, ...hits]);
-      setPage(prevPage => prevPage + 1);
-      setTotalImages(totalHits);
-
-    }
-    catch (error) {
-      console.log('Error with app fetch', error);
-      setError({ error });
-    }
-    finally {
-      setIsLoading(false);
-    }
-  };
 
   const toggleModal = () => {
     setShowModal(prevShowModal => !prevShowModal);
@@ -65,13 +52,6 @@ export const App = () => {
     setLargeImage(fullImageURL);
     setShowModal(true);
   })
-
-  const showLoadmoreButton = images.length > 0
-    && images.length >= 12
-    && images.length < totalImages;
-
-  const endofListMessage = images.length >= totalImages
-    && images.length > 0;
 
   return (
     <>
@@ -87,14 +67,20 @@ export const App = () => {
         images={images}
         onImageClick={handleGalleryItem} />}
 
-      {showLoadmoreButton &&
+      {images.length > 0
+        && images.length >= 12
+        && images.length < totalImages
+        &&
         (<Button
-          onClick={getImages}
-        />)}
+          onClick={() => setPage(prevPage => prevPage + 1)}
+        />)
+      }
 
-      {endofListMessage && <Message>
-        <p>The end of gallery! </p>
-      </Message>}
+      {images.length > 0
+        && images.length >= totalImages
+        && <Message>
+          <p>The end of gallery! </p>
+        </Message>}
 
       {showModal && (<Modal
         onClose={toggleModal} >
@@ -109,5 +95,4 @@ export const App = () => {
       <ToastContainer />
     </>
   );
-
 }
